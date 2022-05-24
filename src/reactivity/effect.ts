@@ -1,13 +1,15 @@
 class ReactiveEffect{
   private _fn: any;
-  constructor(fn) {
+  constructor(fn, public scheduler?) {
     this._fn = fn
   }
 
   run() {
     // 收集effect执行时的实例
     activeEffect = this
-    this._fn()
+
+    // runner方法，处理接受函数返回值
+    return this._fn()
   }
 }
 
@@ -38,6 +40,8 @@ export const track = function(target, key) {
 
   // 查找target中最底层的key的set，存储实例对象
   dep.add(activeEffect)
+
+  console.log(dep)
 }
 
 // 触发依赖
@@ -49,14 +53,23 @@ export const trigger = function(target, key) {
 
   // 循环遍历执行所有收集的实例
   for(const effect of dep) {
-    effect.run()
+    // 处理scheduler
+    if(effect.scheduler) {
+      effect.scheduler()
+    } else {
+      effect.run()
+    }
+    
   }
 }
 
 // 定义effect执行时的实例
 let activeEffect;
-export const effect = function(fn) {
-  const _effect = new ReactiveEffect(fn)
+export const effect = function(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler)
   // 执行run方法来执行用户传入的函数
   _effect.run() 
+
+  // 处理指针问题
+  return _effect.run.bind(_effect)
 }
