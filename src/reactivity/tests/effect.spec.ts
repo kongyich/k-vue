@@ -1,5 +1,5 @@
 import { reactive} from '../reactive'
-import { effect } from '../effect'
+import { effect, stop } from '../effect'
 
 describe("effect", ()=>{
   it('happy path', ()=>{
@@ -18,7 +18,7 @@ describe("effect", ()=>{
   })
 
 
-  
+
   // effect(fn) -> function(runner) -> fn -> return
   it("should return runner when call effect", ()=>{
     let foo = 10
@@ -66,6 +66,48 @@ describe("effect", ()=>{
     run()
     expect(dummy).toBe(2)
 
+  })
+
+
+
+  // stop
+  it("stop", ()=>{
+    let dummy
+    const obj = reactive({props: 1})
+    const runner = effect(()=>{
+      dummy = obj.props
+    })
+    obj.props = 2
+    expect(dummy).toBe(2)
+    stop(runner)
+
+    obj.props = 3
+    expect(dummy).toBe(2)
+
+    runner()
+    expect(dummy).toBe(3)
+  })
+
+  // onStop
+  it("onStop", ()=>{
+    const obj = reactive({
+      foo: 1
+    })
+
+    const onStop = jest.fn()
+    let dummy
+
+    const runner = effect(
+      ()=>{
+        dummy = obj.foo
+      },
+      {
+        onStop
+      }
+    )
+
+    stop(runner)
+    expect(onStop).toBeCalledTimes(1)
   })
 })
 

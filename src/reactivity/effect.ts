@@ -1,5 +1,10 @@
+import { extend } from "../shared/index"
+
 class ReactiveEffect{
   private _fn: any;
+  deps = [];
+  active = true;
+  onStop?: ()=>void;
   constructor(fn, public scheduler?) {
     this._fn = fn
   }
@@ -11,6 +16,24 @@ class ReactiveEffect{
     // runner方法，处理接受函数返回值
     return this._fn()
   }
+
+  stop() {
+    // 防止重复执行
+    if(this.active) {
+      cleanupEffect(this)
+      if(this.onStop) {
+        this.onStop()
+      }
+      this.active = false
+    }
+    
+  }
+}
+
+const cleanupEffect = function(effect) {
+  effect.deps.forEach(dep => {
+    dep.delete(effect)
+  });
 }
 
 // 定义全局map对象
@@ -38,8 +61,14 @@ export const track = function(target, key) {
     depsMap.set(key, dep)
   }
 
+  // 判断是否有activeEffect，防止报错
+  if(!activeEffect) return
+
   // 查找target中最底层的key的set，存储实例对象
   dep.add(activeEffect)
+
+  // 收集所有dep，准备删除
+  activeEffect.deps.push(dep)
 
   console.log(dep)
 }
@@ -67,9 +96,19 @@ export const trigger = function(target, key) {
 let activeEffect;
 export const effect = function(fn, options = {}) {
   const _effect = new ReactiveEffect(fn, options.scheduler)
+
+  // Object.assign(_effect, options)
+  // onStop方法，执行stop时执行
+  extend(_effect, options)
   // 执行run方法来执行用户传入的函数
   _effect.run() 
 
   // 处理指针问题
-  return _effect.run.bind(_effect)
+  const runner = _effect.run.bind(_effect)
+  runner.effect = _effect
+  return runner
+}
+
+export const stop = function(runner) {
+  runner.effect.stop()
 }
