@@ -1,20 +1,34 @@
 import { extend } from "../shared/index"
+let activeEffect;
+let shouldTrack
+
 
 class ReactiveEffect{
   private _fn: any;
   deps = [];
   active = true;
   onStop?: ()=>void;
+  // shouldTrack = true
   constructor(fn, public scheduler?) {
     this._fn = fn
   }
 
   run() {
+
+    if(!this.active) {
+      return this._fn()
+    }
     // 收集effect执行时的实例
+
+
+    shouldTrack = true
+
     activeEffect = this
+    let res = this._fn()
+    shouldTrack = false
 
     // runner方法，处理接受函数返回值
-    return this._fn()
+    return res
   }
 
   stop() {
@@ -33,11 +47,17 @@ class ReactiveEffect{
 const cleanupEffect = function(effect) {
   effect.deps.forEach(dep => {
     dep.delete(effect)
-  });
+  })
+  effect.deps.length = 0
 }
 
 // 定义全局map对象
 const targetMap = new Map()
+
+
+function isTracking() {
+  return shouldTrack && activeEffect !== undefined
+}
 
 // 存储对象的层级关系
 // all: {
@@ -47,6 +67,9 @@ const targetMap = new Map()
 // }
 // 收集依赖
 export const track = function(target, key) {
+   if(!isTracking()) return
+
+
   // target -> key -> dep
   let depsMap = targetMap.get(target)
   // 判断是否为第一次创建
@@ -61,17 +84,17 @@ export const track = function(target, key) {
     depsMap.set(key, dep)
   }
 
-  // 判断是否有activeEffect，防止报错
-  if(!activeEffect) return
-
+ 
+  // 判断是否已经存在
+  if(dep.has(activeEffect)) return
   // 查找target中最底层的key的set，存储实例对象
   dep.add(activeEffect)
 
   // 收集所有dep，准备删除
   activeEffect.deps.push(dep)
-
-  console.log(dep)
 }
+
+
 
 // 触发依赖
 export const trigger = function(target, key) {
@@ -93,7 +116,7 @@ export const trigger = function(target, key) {
 }
 
 // 定义effect执行时的实例
-let activeEffect;
+
 export const effect = function(fn, options = {}) {
   const _effect = new ReactiveEffect(fn, options.scheduler)
 

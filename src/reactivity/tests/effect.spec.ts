@@ -81,7 +81,10 @@ describe("effect", ()=>{
     expect(dummy).toBe(2)
     stop(runner)
 
-    obj.props = 3
+    // obj.props = 3
+
+    // obj.props = obj.props + 1
+    obj.props++
     expect(dummy).toBe(2)
 
     runner()
