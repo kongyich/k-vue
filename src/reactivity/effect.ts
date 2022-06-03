@@ -55,7 +55,7 @@ const cleanupEffect = function(effect) {
 const targetMap = new Map()
 
 
-function isTracking() {
+export function isTracking() {
   return shouldTrack && activeEffect !== undefined
 }
 
@@ -84,7 +84,11 @@ export const track = function(target, key) {
     depsMap.set(key, dep)
   }
 
- 
+  trackEffects(dep)
+  
+}
+
+export const trackEffects = function(dep) {
   // 判断是否已经存在
   if(dep.has(activeEffect)) return
   // 查找target中最底层的key的set，存储实例对象
@@ -96,6 +100,7 @@ export const track = function(target, key) {
 
 
 
+
 // 触发依赖
 export const trigger = function(target, key) {
   // 查找第一层
@@ -103,6 +108,10 @@ export const trigger = function(target, key) {
   // 查找第二层
   let dep = depsMap.get(key)
 
+  triggerEffects(dep)
+}
+
+export const triggerEffects = function(dep) {
   // 循环遍历执行所有收集的实例
   for(const effect of dep) {
     // 处理scheduler
@@ -113,7 +122,9 @@ export const trigger = function(target, key) {
     }
     
   }
-}
+};
+
+
 
 // 定义effect执行时的实例
 
