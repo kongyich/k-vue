@@ -1,4 +1,4 @@
-import { isTracking, trackEffects } from "./effect";
+import { isTracking, trackEffects, triggerEffects } from "./effect";
 import { hasChanged, isObject } from "../shared/index"
 import { reactive } from "./reactive";
 
@@ -9,6 +9,8 @@ class RefImpl {
   private _value: any;
   public dep
   public _rawValue: any
+  // 判断isRef
+  public __is_ref = true
   constructor(value) {
     // 处理比较的时候一个为原始对象，一个为proxy
     this._rawValue = value
@@ -46,4 +48,31 @@ const trackRefValue = function(ref) {
   if(isTracking()) {
     trackEffects(ref.dep)
   }
+}
+
+
+export const isRef = function(ref) {
+  return !!ref.__is_ref
+}
+
+
+export const unRef = function(ref) {
+  // 看看是不是ref ref -> ref.value   ref === value => ref
+  return isRef(ref) ? ref.value : ref
+}
+
+
+export const proxyRef = function(proxyWithRef) {
+  return new Proxy(proxyWithRef, {
+    get(target, key) {
+      return unRef(Reflect.get(target, key))
+    },
+    set(target, key, value) {
+      if(isRef(target[key]) && !isRef(value)) {
+        return (target[key].value = value)
+      } else {
+        return Reflect.set(target, key, value)
+      }
+    }
+  })
 }
