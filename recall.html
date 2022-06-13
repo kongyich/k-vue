@@ -60,6 +60,71 @@
     //   obj.name = 'xixi'
     // }, 3000)
 
+    function watch(source, cb) {
+      let getter
+      if(typeof source === 'function') {
+        getter = source
+      } else {
+        getter = ()=> traverse(source)
+      }
+
+      let oldValue, newValue
+      const effectFn = effect(
+        ()=> getter(),
+        {
+          lazy: true,
+          scheduler() {
+            newValue = effectFn()
+            cb(newValue, oldValue)
+            oldValue = newValue
+          }
+        }
+      )
+      oldValue = effectFn()
+    }
+
+    function traverse(value, seen = new Set()) {
+
+      if(value === null || typeof value !== 'object' || seen.has(value)) return
+
+      seen.add(value)
+
+      for(let i in value) {
+        traverse(value[i], seen)
+      }
+      return value
+    }
+
+    function computed(getter) {
+      let dirty = true
+      let value
+
+      let effectFn = effect(getter, {
+        lazy: true,
+        scheduler() {
+          if(!dirty) {
+            dirty = true
+            trigger(obj, 'value')
+          }
+        }
+      })
+
+
+      const obj = {
+        get value() {
+          if(dirty) {
+            value = effectFn()
+            dirty = false
+          }
+
+          track(obj, 'value')
+          return value
+        }
+      }
+
+      return obj
+    }
+
 
 
 
