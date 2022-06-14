@@ -69,19 +69,46 @@
       }
 
       let oldValue, newValue
+
+      let cleanup
+      function onInvalidate(fn) {
+        cleanup = fn
+      }
+
+      function job() {
+        newValue = effectFn()
+        if(cleanup) {
+          cleanup()
+        }
+        cb(newValue, oldValue, onInvalidate)
+        oldValue = newValue
+      }
+
       const effectFn = effect(
         ()=> getter(),
         {
           lazy: true,
-          scheduler() {
-            newValue = effectFn()
-            cb(newValue, oldValue)
-            oldValue = newValue
+          scheduler: ()=>{
+            // flush值将任务放入微任务队列执行
+            if(options.flush === 'post') {
+              const p = Promise.resolve()
+              p.then(job)
+            } else {
+              job()
+            }
           }
         }
       )
-      oldValue = effectFn()
+
+      if(options.immediate) {
+        job()
+      } else {
+        oldValue = effectFn()
+      }
+      
     }
+
+    
 
     function traverse(value, seen = new Set()) {
 
