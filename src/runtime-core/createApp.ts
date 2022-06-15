@@ -1,4 +1,5 @@
 import { createVNode } from "./vnode"
+import { render } from "./render"
 
 
 export const createApp = function(rootComponent) {
@@ -9,6 +10,10 @@ export const createApp = function(rootComponent) {
       // component -> vnode
 
       const vnode = createVNode(rootComponent)
+
+
+
+      render(vnode, rootContainer)
 
     }
   }
