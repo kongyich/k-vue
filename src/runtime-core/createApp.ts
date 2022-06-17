@@ -11,8 +11,6 @@ export const createApp = function(rootComponent) {
 
       const vnode = createVNode(rootComponent)
 
-
-
       render(vnode, rootContainer)
 
     }
