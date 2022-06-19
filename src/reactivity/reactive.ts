@@ -11,7 +11,7 @@ export const reactive = function(raw: object){
 }
 
 export const isReactive = function(value) {
-  return !!value[ReactiveFlags.IS_REACTIVE]
+  return !!value[ReactiveFlags.·IS_REACTIVE]
 }
 
 
