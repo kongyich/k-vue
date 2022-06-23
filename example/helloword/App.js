@@ -7,7 +7,7 @@ export const App = {
       id: 'root',
       class: ['red', 'hard']
     }, 
-    [h('div', { class: 'blue' }, 'son1'), h('p', { class: 'pink' }, 'son2')]
+    [h('div', { class: 'blue' }, 'son1'), h('p', { class: 'pink' }, this.msg)]
     )
   },
 
