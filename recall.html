@@ -21,21 +21,70 @@
       bar: true
     }
 
-
     const bucket = new WeakMap()
-    let obj = new Proxy(data, {
-      get(target, key) {
-        track(target, key)
+    const ITERATE_KEY = Symbol()
 
-        return target[key]
-      },
-      set(target, key, value) {
-        target[key] = value
-        trigger(target, key)
-      }
-    })
+    function reactive(obj) {
+      return new Proxy(obj, {
+        get(target, key, receiver) {
 
-    effect(()=>{
+          if (key === 'raw') {
+            return target
+          }
+          track(target, key)
+
+          return Reflect.get(target, key, receiver)
+        },
+        set(target, key, newVal, receiver) {
+
+          // 如果属性不存在，则说明是新添加属性，否则的话是设置已有属性
+          const type = Object.prototype.hasOwnProperty(target, key) ? 'SET' : 'ADD'
+          const res = Reflect.set(target, key, newVal, receiver)
+
+          // 与旧值不相等时。才会进行触发更新 去除值为NaN的情况
+          let oldVal = target[key]
+
+          if (target === receiver.raw) {
+            if (oldVal !== newVal && (oldVal === oldVal || newVal === newVal)) {
+              trigger(target, key, type)
+            }
+          }
+
+          return res
+        },
+        // 拦截in操作符
+        has(target, key) {
+          track(target, key)
+          return Reflect.has(target, key)
+        },
+
+        // ownKey
+        ownKeys(target) {
+          // 将副作用函数与 ITERATE_KEY
+          // ownKey中没有key值，先使用一个symbol值进行代替
+          track(target, ITERATE_KEY)
+          return Reflect.ownKeys(target)
+        },
+
+        // delete删除操作
+        deleteProperty(target, key) {
+          // 检查被操作属性是否为对象自己的属性
+          const hasKey = Object.prototype.hasOwnProperty.call(target, key)
+          // 属性删除
+          const res = Reflect.deleteProperty(target, key)
+
+          if (res && hasKey) {
+            // 只有当被删除的属性是对象自己的属性并成功删除时，才会触发更新
+            trigger(target, key, 'DELETE')
+          }
+
+          return res
+        }
+      })
+    }
+
+
+    effect(() => {
       console.log(obj.foo);
     }, {
       scheduler(fn) {
@@ -43,41 +92,25 @@
       }
     })
 
-    // let temp1, temp2
-    // effect(function effectFn1() {
-    //   console.log('effectFn1 执行')
-
-    //   effect(function effectFn2() {
-    //     console.log('effectFn2 执行')
-
-    //     temp2 = obj.bar
-    //   })
-
-    //   temp1 = obj.foo
-    // })
-
-    // setTimeout(()=>{
-    //   obj.name = 'xixi'
-    // }, 3000)
-
     function watch(source, cb) {
       let getter
-      if(typeof source === 'function') {
+      if (typeof source === 'function') {
         getter = source
       } else {
-        getter = ()=> traverse(source)
+        getter = () => traverse(source)
       }
 
       let oldValue, newValue
 
       let cleanup
+
       function onInvalidate(fn) {
         cleanup = fn
       }
 
       function job() {
         newValue = effectFn()
-        if(cleanup) {
+        if (cleanup) {
           cleanup()
         }
         cb(newValue, oldValue, onInvalidate)
@@ -85,12 +118,11 @@
       }
 
       const effectFn = effect(
-        ()=> getter(),
-        {
+        () => getter(), {
           lazy: true,
-          scheduler: ()=>{
+          scheduler: () => {
             // flush值将任务放入微任务队列执行
-            if(options.flush === 'post') {
+            if (options.flush === 'post') {
               const p = Promise.resolve()
               p.then(job)
             } else {
@@ -100,23 +132,21 @@
         }
       )
 
-      if(options.immediate) {
+      if (options.immediate) {
         job()
       } else {
         oldValue = effectFn()
       }
-      
-    }
 
-    
+    }
 
     function traverse(value, seen = new Set()) {
 
-      if(value === null || typeof value !== 'object' || seen.has(value)) return
+      if (value === null || typeof value !== 'object' || seen.has(value)) return
 
       seen.add(value)
 
-      for(let i in value) {
+      for (let i in value) {
         traverse(value[i], seen)
       }
       return value
@@ -129,7 +159,7 @@
       let effectFn = effect(getter, {
         lazy: true,
         scheduler() {
-          if(!dirty) {
+          if (!dirty) {
             dirty = true
             trigger(obj, 'value')
           }
@@ -139,7 +169,7 @@
 
       const obj = {
         get value() {
-          if(dirty) {
+          if (dirty) {
             value = effectFn()
             dirty = false
           }
@@ -151,9 +181,6 @@
 
       return obj
     }
-
-
-
 
     function track(target, key) {
       if (!activeEffect) return
@@ -173,7 +200,7 @@
       activeEffect.deps.push(deps)
     }
 
-    function trigger(target, key) {
+    function trigger(target, key, type) {
       let depsMap = bucket.get(target)
 
       if (!depsMap) return
@@ -184,21 +211,32 @@
       let effectToRun = new Set()
 
       effects && effects.forEach(effectFn => {
-        if(effectFn !== activeEffect) {
+        if (effectFn !== activeEffect) {
           effectToRun.add(effectFn)
         }
       })
 
+      // 当for in遍历时，set（修改操作不需要再次执行forin，只有新增时才需要重新触发）
+      if (type === 'ADD' || type === 'DELETE') {
+        // 取出symbol的值
+        let iterateEffects = depsMap.get(ITERATE_KEY)
+
+        iterateEffects && iterateEffects, forEach(effectFn => {
+          if (effectFn !== activeEffect) {
+            effectToRun.add(effectFn)
+          }
+        })
+      }
+
+
       effectToRun.forEach(effectFn => {
-        if(effectFn.options.scheduler) {
+        if (effectFn.options.scheduler) {
           effectFn.options.scheduler(effectFn)
         } else {
           effectFn()
         }
       })
     }
-
-
 
     function effect(fn, options = {}) {
       const effectFn = function () {
