@@ -16,26 +16,62 @@
     const effectStack = []
 
 
-    let data = {
-      foo: true,
-      bar: true
+    // let data = {
+    //   foo: true,
+    //   bar: true
+    // }
+
+    function reactive(obj) {
+      return createReactive(obj)
     }
+
+    function shallowReactive(obj) {
+      return createReactive(obj, true)
+    }
+
+    function readOnly(obj) {
+      return createReactive(obj, false, true)
+    }
+
+    function shallowReadOnly(obj) {
+      return createReactive(obj, true, true)
+    }
+
 
     const bucket = new WeakMap()
     const ITERATE_KEY = Symbol()
 
-    function reactive(obj) {
+    function createReactive(obj, isShallow = false, isReadOnly = false) {
       return new Proxy(obj, {
         get(target, key, receiver) {
 
           if (key === 'raw') {
             return target
           }
-          track(target, key)
 
-          return Reflect.get(target, key, receiver)
+          // 只读情况下不需要追踪依赖
+          if(!isReadOnly) {
+            track(target, key)
+          }
+         
+          let res = Reflect.get(target, key, receiver)
+
+          if(isShallow) {
+            return res
+          }
+
+          // 深只读
+          if(typeof res === 'object' && res !== null) {
+            return isReadOnly ? readOnly(res) : reactive(res)
+          }
+          return res
         },
         set(target, key, newVal, receiver) {
+
+          // 只读？
+          if(isReadOnly) {
+            return false // 只读
+          }
 
           // 如果属性不存在，则说明是新添加属性，否则的话是设置已有属性
           const type = Object.prototype.hasOwnProperty(target, key) ? 'SET' : 'ADD'
@@ -68,6 +104,12 @@
 
         // delete删除操作
         deleteProperty(target, key) {
+
+          // 只读？
+          if(isReadOnly) {
+            return false
+          }
+
           // 检查被操作属性是否为对象自己的属性
           const hasKey = Object.prototype.hasOwnProperty.call(target, key)
           // 属性删除
@@ -84,13 +126,13 @@
     }
 
 
-    effect(() => {
-      console.log(obj.foo);
-    }, {
-      scheduler(fn) {
-        // ...做点什么
-      }
-    })
+    // effect(() => {
+    //   console.log(obj.foo);
+    // }, {
+    //   scheduler(fn) {
+    //     // ...做点什么
+    //   }
+    // })
 
     function watch(source, cb) {
       let getter
