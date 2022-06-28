@@ -74,7 +74,8 @@
           }
 
           // 如果属性不存在，则说明是新添加属性，否则的话是设置已有属性
-          const type = Object.prototype.hasOwnProperty(target, key) ? 'SET' : 'ADD'
+          // 判断array类型
+          const type = Array.isArray(target) ? Number(key) > target.length ? 'ADD' : 'SET' : Object.prototype.hasOwnProperty(target, key) ? 'SET' : 'ADD'
           const res = Reflect.set(target, key, newVal, receiver)
 
           // 与旧值不相等时。才会进行触发更新 去除值为NaN的情况
@@ -266,6 +267,18 @@
         iterateEffects && iterateEffects, forEach(effectFn => {
           if (effectFn !== activeEffect) {
             effectToRun.add(effectFn)
+          }
+        })
+      }
+
+      // 取出lengh
+      // 如果操作为添加，并且为数组的话，应当更新length相关操作
+      if(type === 'ADD' && Array.isArray(target)) {
+        const lengthEffects = depsMap.get('length')
+        // 将这些副作用函数添加到effectToRun中
+        lengthEffects && lengthEffects.forEach(effectFn => {
+          if(effectFn !== activeEffect) {
+            effectToRun.push(effectFn)
           }
         })
       }
