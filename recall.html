@@ -21,8 +21,17 @@
     //   bar: true
     // }
 
+    const reactiveMap = new Map()
+
     function reactive(obj) {
-      return createReactive(obj)
+
+      const existionProxy = reactiveMap.get(obj)
+
+      if(existionProxy) return existionProxy
+
+      const proxy = createReactive(obj)
+      reactiveMap.set(obj, proxy)
+      return proxy
     }
 
     function shallowReactive(obj) {
@@ -41,6 +50,25 @@
     const bucket = new WeakMap()
     const ITERATE_KEY = Symbol()
 
+    const arrayInstrumentations = {}
+
+    ;['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+      const originMethod = Array.prototype[method]
+
+      arrayInstrumentations[method] = function(...arg) {
+        // this为代理对象，现在代理对象中查找
+        let res = originMethod.apply(this, arg)
+
+        // 如果没找到，再在原始对象中查找
+        if(res === false) {
+          res = originMethod.apply(this.raw, arg)
+        }
+        return res
+      }
+    })
+
+
+
     function createReactive(obj, isShallow = false, isReadOnly = false) {
       return new Proxy(obj, {
         get(target, key, receiver) {
@@ -49,8 +77,15 @@
             return target
           }
 
+          // 如果操作的目标是数组，并且key存在于arrayInstrumentations中
+          // 返回arrayInstrumentations中的key值
+          if(Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+            return Reflect.get(arrayInstrumentations, key, receiver)
+          }
+
           // 只读情况下不需要追踪依赖
-          if(!isReadOnly) {
+          // 性能考虑，如果key值为迭代器，不应该进行绑定响应
+          if(!isReadOnly && typeof key !== 'symbol') {
             track(target, key)
           }
          
@@ -83,7 +118,7 @@
 
           if (target === receiver.raw) {
             if (oldVal !== newVal && (oldVal === oldVal || newVal === newVal)) {
-              trigger(target, key, type)
+              trigger(target, key, type, newVal)
             }
           }
 
@@ -99,7 +134,9 @@
         ownKeys(target) {
           // 将副作用函数与 ITERATE_KEY
           // ownKey中没有key值，先使用一个symbol值进行代替
-          track(target, ITERATE_KEY)
+
+          // 如果是数组，那么使用length来绑定响应，因为length属性被修改forin需要重新执行
+          track(target, Array.isArray(target) ? 'length' : ITERATE_KEY)
           return Reflect.ownKeys(target)
         },
 
@@ -243,7 +280,7 @@
       activeEffect.deps.push(deps)
     }
 
-    function trigger(target, key, type) {
+    function trigger(target, key, type, newVal) {
       let depsMap = bucket.get(target)
 
       if (!depsMap) return
@@ -279,6 +316,21 @@
         lengthEffects && lengthEffects.forEach(effectFn => {
           if(effectFn !== activeEffect) {
             effectToRun.push(effectFn)
+          }
+        })
+      }
+
+      // 如果操作目标是数组，并且key为length
+      // 那么将位置大于新值的元素全部触发响应
+
+      if(Array.isArray(target) && key === 'length') {
+        depsMap.forEach((effect, key) {
+          if(key >= newVal) {
+            effect.forEach(effectFn => {
+              if(effectFn !== activeEffect) {
+                effectToRun.push(effectFn)
+              }
+            })
           }
         })
       }
