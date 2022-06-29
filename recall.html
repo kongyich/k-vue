@@ -67,6 +67,22 @@
       }
     })
 
+    // 标记是否追踪依赖
+    const shouldTrack = true
+    // 重写数组的pop/shift/unshift及splice方法，防止栈溢出
+    ;['pop', 'shift', 'unshift', 'splice'].forEach(method=>{
+      let originMethod = Array.prototype[method]
+
+      arrayInstrumentations[method] = function(...arg) {
+        shouldTrack = false
+        let res = originMethod.apply(this, arg)
+        shouldTrack = true
+        return res
+      }
+
+      
+    })
+
 
 
     function createReactive(obj, isShallow = false, isReadOnly = false) {
@@ -263,7 +279,7 @@
     }
 
     function track(target, key) {
-      if (!activeEffect) return
+      if (!activeEffect || !shouldTrack) return
       let depsMap = bucket.get(target)
 
       if (!depsMap) {
