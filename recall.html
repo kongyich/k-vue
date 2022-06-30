@@ -83,7 +83,34 @@
       
     })
 
+    const mutableInstrumentation = {
+      add(key) {
+        // this仍然是代理对象，通过this.raw获取原始属性对象
+        const target = this.raw
 
+        //先判断值是否已经存在
+        const hasKey = target.has(key)
+
+        // 通过原始方法增加值
+        if(!hasKey) {
+          const res = target.add(key)
+          trigger(target, key, 'ADD')
+        }
+        
+        return res
+      },
+
+      delete(key) {
+        const target = this.raw
+        const hasKey = target.has(key)
+
+        const res = target.delete(key)
+        if(hasKey) {
+          trigger(target, key, 'DELETE')
+        }
+        return res
+      }
+    }
 
     function createReactive(obj, isShallow = false, isReadOnly = false) {
       return new Proxy(obj, {
@@ -115,6 +142,16 @@
           if(typeof res === 'object' && res !== null) {
             return isReadOnly ? readOnly(res) : reactive(res)
           }
+
+          // 处理Set与Map中的获取
+          if(key === 'size') {
+            track(target, ITERATE_KEY)
+            return Reflect.get(target, key, target)
+          }
+
+          // 返回定义在mutableInstrumentation上的方法
+          return mutableInstrumentation[key]
+
           return res
         },
         set(target, key, newVal, receiver) {
