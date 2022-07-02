@@ -21,6 +21,50 @@
     //   bar: true
     // }
 
+    // ref功能
+    function ref(val) {
+      const wrapper = {
+        value: val
+      }
+
+      Object.defineProperty(wrapper, '__v_isRef', {
+        value: true
+      })
+
+      return reactive(wrapper)
+    }
+
+    // 解决响应式丢失问题
+    // { ...toRefs(obj) }
+    // toRef
+    function toRef(obj, key) {
+      const wrapper = {
+        get value() {
+          return obj[key]
+        },
+        set value(val) {
+          obj[key] = val
+        }
+      }
+
+      Object.defineProperty(obj, '__v_isRef', {
+        value: true
+      })
+
+
+      return wrapper
+    }
+
+    // roRefs
+    function roRefs(obj) {
+      const res = {}
+      // 挨个进行处理
+      for(let key in obj) {
+        res[key] = toRef(obj, key)
+      }
+      return res
+    }
+
     const reactiveMap = new Map()
 
     function reactive(obj) {
@@ -138,8 +182,94 @@
         } else if(oldVal !== value || (oldVal === oldVal && value === value)) {
           trigger(target, key, 'SET')
         }
+      },
+      forEach(cb, thisArg) {
+        // 使参数也进行响应式转换
+        const wrap = val => typeof val === 'object' ? reactive(val) : val
+        const target = this.raw
+        track(target, ITERATE_KEY)
+
+        target.forEach((v, k) => {
+          cb(thisArg, wrap(k), wrap(v), this)
+        })
+      },
+      // 迭代器
+      [Symbol.iterator]: iterationMethod,
+      entries: iterationMethod,
+      values: valuesIterationMethod,
+      keys: keysIterationMethod
+    }
+
+    function iterationMethod() {
+      const target = this.raw
+      const itr = target[Symbol.iterator]()
+
+      const wrap = val => typeof val === 'object' && val !== null ? reactive(val) : val
+
+      track(target, ITERATE_KEY)
+
+      return {
+        next() {
+          const { value, done } = itr.next()
+          return {
+            value: value ? [wrap(value[0]), wrap(value[1])] : value,
+            done,
+          }
+        },
+        // 实现可迭代协议
+        [Symbol.iterator]() {
+          return this
+        }
       }
     }
+
+    const KEYS_ITERATE_KEY = Symbol()
+    function keysIterationMethod() {
+      const target = this.raw
+      const itr = target.keys()
+
+      track(target, KEYS_ITERATE_KEY)
+
+      const wrap = val => typeof val === 'object' ? reactive(val) : val
+
+      return {
+        next() {
+          const { value, done } = itr.next()
+          return {
+            value: wrap(value),
+            done
+          }
+        },
+        [Symbol.iterator]() {
+          return this
+        }
+      }
+    }
+
+
+    function valuesIterationMethod() {
+      // 获取原始值对象
+      const target = this.raw
+      const wrap = val => typeof val === 'object' ? reactive(val) : val
+
+      const itr = target.values()
+
+      track(target, ITERATE_KEY)
+
+      return {
+        next() {
+          const { value, done } = itr.next()
+          return {
+            value: wrap(value),
+            done
+          }
+        },
+        [Symbol.iterator]() {
+          return this
+        }
+      }
+    }
+
 
     function createReactive(obj, isShallow = false, isReadOnly = false) {
       return new Proxy(obj, {
@@ -379,12 +509,24 @@
       })
 
       // 当for in遍历时，set（修改操作不需要再次执行forin，只有新增时才需要重新触发）
-      if (type === 'ADD' || type === 'DELETE') {
+      // 当类型为map时，设置操作也需要触发
+      if (type === 'ADD' || type === 'DELETE' || (type === 'SET' && Object.prototype.toString.call(target) === '[object Map]')) {
         // 取出symbol的值
         let iterateEffects = depsMap.get(ITERATE_KEY)
 
         iterateEffects && iterateEffects, forEach(effectFn => {
           if (effectFn !== activeEffect) {
+            effectToRun.add(effectFn)
+          }
+        })
+      }
+
+      // 处理map数据结构的keys()
+      if((type === 'ADD' || type === 'DELETE') && Object.prototype.toString.call(target) === '[object Map]') {
+        let iterateEffects = depsMap.get(KEYS_ITERATE_KEY)
+
+        iterateEffects && iterateEffects.forEach(effectFn => {
+          if(effectFn !== activeEffect) {
             effectToRun.add(effectFn)
           }
         })
@@ -406,7 +548,7 @@
       // 那么将位置大于新值的元素全部触发响应
 
       if(Array.isArray(target) && key === 'length') {
-        depsMap.forEach((effect, key) {
+        depsMap.forEach((effect, key) => {
           if(key >= newVal) {
             effect.forEach(effectFn => {
               if(effectFn !== activeEffect) {
