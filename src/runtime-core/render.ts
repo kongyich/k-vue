@@ -25,7 +25,7 @@ function processElement(vnode, container) {
 }
 
 function mountElement(vnode, container) {
-  let el = document.createElement(vnode.type)
+  let el = (vnode.el = document.createElement(vnode.type))
 
   const { children } = vnode
 
@@ -59,12 +59,13 @@ function mountComponent(vnode: any, container) {
 
   setupComponent(instance)
 
-  setupRenderEffect(instance, container)
+  setupRenderEffect(instance, vnode, container)
 }
 
-function setupRenderEffect(instance, container) {
+function setupRenderEffect(instance, vnode,  container) {
   const { proxy } = instance
   const subTree = instance.render.call(proxy)
 
   patch(subTree, container)
+  vnode.el = subTree.el
 }
