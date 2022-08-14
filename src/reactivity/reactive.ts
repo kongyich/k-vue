@@ -1,3 +1,4 @@
+import { isObject } from "../shared/index"
 import { mutableHandlers, readOnlyHandlers, shallowReadonlyHandlers } from "./baseHandlers"
 
 
@@ -34,6 +35,10 @@ export const isProxy = function(value) {
 
 
 const createActiveObject = function(raw, baseHandlers) {
+  if(!isObject(raw)) {
+    console.warn("target is not object")
+    return
+  }
   return new Proxy(raw, baseHandlers)
 }
 
