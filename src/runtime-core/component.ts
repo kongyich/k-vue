@@ -37,9 +37,11 @@ function setupStatefulComponent(instance: any) {
   instance.proxy = new Proxy({ _: instance },PbulicInstanceProxyHandels)
 
   if(setup) {
+    setCurrentInstance(instance)
     let setupResult = setup(shallowReadonly(instance.props), {
       emit: instance.emit
     })
+    setCurrentInstance(null)
 
     handleSetupResult(instance, setupResult)
   }
@@ -61,4 +63,14 @@ function finishComponentSetup(instance: any) {
   if(Component.render) {
     instance.render = Component.render
   }
+}
+
+let currentInstance = null
+export const getCurrentInstance = function() {
+  return currentInstance
+}
+
+
+export function setCurrentInstance(instance) {
+  currentInstance = instance
 }
