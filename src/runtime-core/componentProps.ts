@@ -1,4 +1,4 @@
 
-export const initProps = function(instance. rawProps) {
+export const initProps = function(instance, rawProps) {
   instance.props = rawProps || {}
 }

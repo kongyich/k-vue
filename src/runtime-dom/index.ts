@@ -11,9 +11,9 @@ const patchProp = function(el, key, value) {
 
   if(isOn(key)) {
     const event = key.slice(2).toLowerCase()
-    el.addEventListener(event, val)
+    el.addEventListener(event, value)
   } else {
-    el.setAttribute(key, val)
+    el.setAttribute(key, value)
   }
 }
 
