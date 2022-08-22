@@ -1,5 +1,5 @@
 import { effect } from "../reactivity/effect"
-import { isObject } from "../shared/index"
+import { EMPTY_OBJ, isObject } from "../shared/index"
 import { ShapeFlags } from "../shared/shapeFlags"
 import { createComponentInstance, setupComponent } from "./component"
 import { createAppApi } from "./createApp"
@@ -44,10 +44,40 @@ export function createRender(options) {
     }
   }
 
+
   function patchElement(n1, n2, container) {
     console.log('patchElement');
-    console.log(n1);
-    console.log(n2);
+
+    const oldProps = n1.props || EMPTY_OBJ
+    const newProps = n2.props || EMPTY_OBJ
+
+    const el = (n2.el = n1.el)
+
+    patchProps(el, oldProps, newProps)
+  }
+
+  function patchProps(el, oldProps, newProps) {
+
+    if(oldProps !== newProps) {
+      for (const key in newProps) {
+        const prevProp = oldProps[key]
+        const nextProp = newProps[key]
+  
+        if(prevProp !== nextProp) {
+          patchProp(el, key, prevProp. nextProp)
+        }
+      }
+  
+      if(oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          if(!(key in newProps)) {
+            patchProp(el, key, oldProps[key], null)
+          }
+        }
+      }
+      
+    }
+    
   }
 
   function mountElement(vnode, container, parentComponent) {
@@ -65,7 +95,7 @@ export function createRender(options) {
     for (let key in props) {
       let val = props[key]
 
-      patchProp(el, key, val)
+      patchProp(el, key, null, val)
 
       // const isOn = key => /^on[A-Z]/.test(key)
 
