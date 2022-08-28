@@ -23,8 +23,9 @@ const patchProp = function(el, key, prevVal, nextVal) {
   }
 }
 
-const insert = function(el, parent) {
-  parent.append(el)
+const insert = function(child, parent, anchor) {
+  // parent.append(el)
+  parent.insertBefore(child, anchor || null)
 }
 
 const remove = function(child) {
