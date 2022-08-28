@@ -29,17 +29,49 @@ import { h, ref } from "../../lib/k-vue.esm.js"
 
 
 
+// const prevChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'C' }, 'C'),
+//   h('p', { key: 'G' }, 'G'),
+//   h('p', { key: 'F' }, 'F'),
+// ]
+
+// const nextChildren = [
+//   h('p', { key: 'A' }, 'A'),
+//   h('p', { key: 'B' }, 'B'),
+//   h('p', { key: 'C' }, 'C'),
+//   h('p', { key: 'D' }, 'D'),
+//   h('p', { key: 'E' }, 'E'),
+//   h('p', { key: 'F' }, 'F'),
+// ]
+
 const prevChildren = [
-  h('p', { key: 'A' }, 'A'),
-  h('p', { key: 'B' }, 'B'),
-]
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+
+
+  h("p", { id: "c-prev" }, "C"),
+  h("p", {}, "D"),
+
+
+  h("p", { key: "E" }, "E"),
+  h("p", { key: "F" }, "F"),
+];
 
 const nextChildren = [
-  h('p', { key: 'D' }, 'D'),
-  h('p', { key: 'C' }, 'C'),
-  h('p', { key: 'A' }, 'A'),
-  h('p', { key: 'B' }, 'B'),
-]
+  h("p", { key: "A" }, "A"),
+  h("p", { key: "B" }, "B"),
+
+
+  h("p", { key: "X" }, "X"),
+  h("p", { key: "Y", id:"c-next" }, "Y"),
+
+  
+  h("p", { key: "E" }, "E"),
+  h("p", { key: "F" }, "F"),
+];
 
 
 export default {
