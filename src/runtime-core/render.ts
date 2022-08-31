@@ -2,6 +2,7 @@ import { effect } from "../reactivity/effect"
 import { EMPTY_OBJ, isObject } from "../shared/index"
 import { ShapeFlags } from "../shared/shapeFlags"
 import { createComponentInstance, setupComponent } from "./component"
+import { shouldUpdateComponent } from "./componentUpdateUtils"
 import { createAppApi } from "./createApp"
 import { Fragment, Text } from "./vnode"
    
@@ -340,11 +341,30 @@ export function createRender(options) {
   }
 
   function processComponent(n1, n2, container: any, parentComponent, anchor) {
-    mountComponent(n2, container, parentComponent, anchor)
+
+    if(!n1) {
+      mountComponent(n2, container, parentComponent, anchor)
+    } else {
+      updateComponent(n1, n2)
+    }
+    
+  }
+
+  function updateComponent(n1, n2) {
+    const instance = (n2.component = n1.component)
+    if(shouldUpdateComponent(n1, n2)) {
+      instance.next = n2
+      instance.update()
+    } else {
+      n2.el = n1.el
+      instance.vnode = n2
+    }
+    
+
   }
 
   function mountComponent(vnode: any, container, parentComponent, anchor) {
-    const instance = createComponentInstance(vnode, parentComponent)
+    const instance = (vnode.component = createComponentInstance(vnode, parentComponent))
 
     setupComponent(instance)
 
@@ -352,7 +372,7 @@ export function createRender(options) {
   }
 
   function setupRenderEffect(instance, vnode, container, anchor) {
-    effect(()=>{
+    instance.update = effect(()=>{
       if(!instance.isMounted) {
         const { proxy } = instance
         const subTree = (instance.subTree = instance.render.call(proxy))
@@ -364,6 +384,13 @@ export function createRender(options) {
       } else {
         console.log('update');
 
+        const { next, vnode } = instance
+
+        if(next) {
+          next.el = vnode.el
+          updateComponentPreRender(instance, next)
+        }
+
         const { proxy } = instance
         const subTree = instance.render.call(proxy)
         const prevSubTree = instance.subTree
@@ -373,6 +400,13 @@ export function createRender(options) {
         patch(prevSubTree, subTree, container, instance, anchor)
       }
     })
+  }
+
+  function updateComponentPreRender(instance, nextVNode) {
+    instance.vnode = nextVNode
+    instance.next = null
+
+    instance.props = nextVNode.props
   }
 
 
