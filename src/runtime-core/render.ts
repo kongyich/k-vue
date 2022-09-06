@@ -6,7 +6,7 @@ import { shouldUpdateComponent } from "./componentUpdateUtils"
 import { createAppApi } from "./createApp"
 import { Fragment, Text } from "./vnode"
 import { queueJobs } from './scheduler'
-   
+
 export function createRender(options) {
 
   const { createElement, patchProp, insert, remove, setElementText } = options
@@ -35,11 +35,10 @@ export function createRender(options) {
           processComponent(n1, n2, container, parentComponent, anchor)
         }
     }
-
   }
 
   function processElement(n1, n2, container, parentComponent, anchor) {
-    if(!n1) {
+    if (!n1) {
       mountElement(n2, container, parentComponent, anchor)
     } else {
       patchElement(n1, n2, container, parentComponent, anchor)
@@ -65,16 +64,16 @@ export function createRender(options) {
     const c1 = n1.children
     const c2 = n2.children
 
-    if(shapeFlag & shapeFlag.TEXT_CHILDREN) {
-      if(prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
+    if (shapeFlag & shapeFlag.TEXT_CHILDREN) {
+      if (prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
         unmountChildren(n1.children)
-      } 
-      if(c1 !== c2) {
+      }
+      if (c1 !== c2) {
         setElementText(container, c2)
       }
 
     } else {
-      if(prevShapeFlag & shapeFlag.TEXT_CHILDREN) {
+      if (prevShapeFlag & shapeFlag.TEXT_CHILDREN) {
 
         setElementText(container, "")
         mountChildren(c2, container, parentComponent, anchor)
@@ -100,12 +99,12 @@ export function createRender(options) {
     }
 
     // 左侧
-    while(i <= e1 && i <= e2) {
+    while (i <= e1 && i <= e2) {
       const n1 = c1[i]
       const n2 = c2[i]
 
-      if(isSameVNode(n1, n2)) {
-         patch(n1, n2, container, parentComponent, parentAnchor)
+      if (isSameVNode(n1, n2)) {
+        patch(n1, n2, container, parentComponent, parentAnchor)
       } else {
         break
       }
@@ -114,11 +113,11 @@ export function createRender(options) {
 
 
     // 右侧
-    while(i <= e1 && i <= e2) {
+    while (i <= e1 && i <= e2) {
       const n1 = c1[e1]
       const n2 = c2[e2]
 
-      if(isSameVNode(n1, n2)) {
+      if (isSameVNode(n1, n2)) {
         patch(n1, n2, container, parentComponent, parentAnchor)
       } else {
         break
@@ -129,67 +128,67 @@ export function createRender(options) {
     }
 
 
-    if(i > e1) {
-      if(i <= e2) {
+    if (i > e1) {
+      if (i <= e2) {
         const nextPos = e2 + 1
         const anchor = nextPos > l2 ? null : c2[nextPos].el
-        while(i <= e2) {
+        while (i <= e2) {
           patch(null, c2[i], container, parentComponent, anchor)
           i++
         }
       }
-    } else if(i > e2) {
-      while(i <= e1) {
+    } else if (i > e2) {
+      while (i <= e1) {
         remove(c1[i].el)
         i++
       }
     } else {
-       // 中间对比
-       let s1 = i;
-       let s2 = i;
- 
-       const toBePatched = e2 - s2 + 1;
-       let patched = 0;
-       const keyToNewIndexMap = new Map();
+      // 中间对比
+      let s1 = i;
+      let s2 = i;
 
-       let moved = false
-       let maxNewIndexSoFar = 0
+      const toBePatched = e2 - s2 + 1;
+      let patched = 0;
+      const keyToNewIndexMap = new Map();
 
-       const newIndexToOldIndexMap = new Array(toBePatched)
-       for(let i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0
- 
-       for (let i = s2; i <= e2; i++) {
-         const nextChild = c2[i];
-         keyToNewIndexMap.set(nextChild.key, i);
-       }
- 
-       for (let i = s1; i <= e1; i++) {
-         const prevChild = c1[i];
-        
-         if (patched >= toBePatched) {
+      let moved = false
+      let maxNewIndexSoFar = 0
+
+      const newIndexToOldIndexMap = new Array(toBePatched)
+      for (let i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0
+
+      for (let i = s2; i <= e2; i++) {
+        const nextChild = c2[i];
+        keyToNewIndexMap.set(nextChild.key, i);
+      }
+
+      for (let i = s1; i <= e1; i++) {
+        const prevChild = c1[i];
+
+        if (patched >= toBePatched) {
           remove(prevChild.el);
-           continue;
-         }
- 
-         let newIndex;
-         if (prevChild.key != null) {
-           newIndex = keyToNewIndexMap.get(prevChild.key);
-         } else {
-           for (let j = s2; j <= e2; j++) {
-            
-             if (isSameVNode(prevChild, c2[j])) {
-               newIndex = j;
- 
-               break;
-             }
-           }
-         }
- 
-         if (newIndex === undefined) {
-           remove(prevChild.el);
-         } else {
+          continue;
+        }
 
-          if(newIndex >= maxNewIndexSoFar) {
+        let newIndex;
+        if (prevChild.key != null) {
+          newIndex = keyToNewIndexMap.get(prevChild.key);
+        } else {
+          for (let j = s2; j <= e2; j++) {
+
+            if (isSameVNode(prevChild, c2[j])) {
+              newIndex = j;
+
+              break;
+            }
+          }
+        }
+
+        if (newIndex === undefined) {
+          remove(prevChild.el);
+        } else {
+
+          if (newIndex >= maxNewIndexSoFar) {
             maxNewIndexSoFar = newIndex
           } else {
             moved = true
@@ -197,33 +196,33 @@ export function createRender(options) {
 
           newIndexToOldIndexMap[newIndex - s2] = i + 1
 
-           patch(prevChild, c2[newIndex], container, parentComponent, null);
-           patched++;
-         }
+          patch(prevChild, c2[newIndex], container, parentComponent, null);
+          patched++;
+        }
 
-         const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : []
-         let j = increasingNewIndexSequence.length - 1
+        const increasingNewIndexSequence = moved ? getSequence(newIndexToOldIndexMap) : []
+        let j = increasingNewIndexSequence.length - 1
 
-         for(let i = toBePatched - 1; i >= 0; i--) {
+        for (let i = toBePatched - 1; i >= 0; i--) {
           const nextIndex = i + s2
           const nextChild = c2[nextIndex]
           const anchor = nextIndex + 1 < l2 ? c2[nextIndex + 1].el : null
 
           if (newIndexToOldIndexMap[i] === 0) {
             patch(null, nextChild, container, parentComponent, anchor);
-          } else if(moved) {
-            if(j < 0 || i !== increasingNewIndexSequence[j]) {
+          } else if (moved) {
+            if (j < 0 || i !== increasingNewIndexSequence[j]) {
               // 移动
               insert(nextChild.el, container, anchor)
             } else {
               j--
             }
           }
-          
-         }
+
+        }
 
 
-       }
+      }
     }
 
     console.log(i)
@@ -273,7 +272,7 @@ export function createRender(options) {
 
 
   function unmountChildren(children) {
-    for(let i = 0; i < children.length; i++) {
+    for (let i = 0; i < children.length; i++) {
       const el = children[i].el
 
       remove(el)
@@ -282,26 +281,26 @@ export function createRender(options) {
 
   function patchProps(el, oldProps, newProps) {
 
-    if(oldProps !== newProps) {
+    if (oldProps !== newProps) {
       for (const key in newProps) {
         const prevProp = oldProps[key]
         const nextProp = newProps[key]
-  
-        if(prevProp !== nextProp) {
-          patchProp(el, key, prevProp. nextProp)
+
+        if (prevProp !== nextProp) {
+          patchProp(el, key, prevProp.nextProp)
         }
       }
-  
-      if(oldProps !== EMPTY_OBJ) {
+
+      if (oldProps !== EMPTY_OBJ) {
         for (const key in oldProps) {
-          if(!(key in newProps)) {
+          if (!(key in newProps)) {
             patchProp(el, key, oldProps[key], null)
           }
         }
       }
-      
+
     }
-    
+
   }
 
   function mountElement(vnode, container, parentComponent, anchor) {
@@ -343,24 +342,24 @@ export function createRender(options) {
 
   function processComponent(n1, n2, container: any, parentComponent, anchor) {
 
-    if(!n1) {
+    if (!n1) {
       mountComponent(n2, container, parentComponent, anchor)
     } else {
       updateComponent(n1, n2)
     }
-    
+
   }
 
   function updateComponent(n1, n2) {
     const instance = (n2.component = n1.component)
-    if(shouldUpdateComponent(n1, n2)) {
+    if (shouldUpdateComponent(n1, n2)) {
       instance.next = n2
       instance.update()
     } else {
       n2.el = n1.el
       instance.vnode = n2
     }
-    
+
 
   }
 
@@ -373,8 +372,8 @@ export function createRender(options) {
   }
 
   function setupRenderEffect(instance, vnode, container, anchor) {
-    instance.update = effect(()=>{
-      if(!instance.isMounted) {
+    instance.update = effect(() => {
+      if (!instance.isMounted) {
         const { proxy } = instance
         const subTree = (instance.subTree = instance.render.call(proxy))
 
@@ -387,7 +386,7 @@ export function createRender(options) {
 
         const { next, vnode } = instance
 
-        if(next) {
+        if (next) {
           next.el = vnode.el
           updateComponentPreRender(instance, next)
         }
