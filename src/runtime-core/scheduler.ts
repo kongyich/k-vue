@@ -3,16 +3,16 @@ const queue: any = []
 const p = Promise.resolve()
 let isFlushPedding = false
 
-const nextTick = function(fn) {
+const nextTick = function (fn) {
   return fn ? p.then(fn) : p
 }
 
-export const queueJobs = function(job) {
+export const queueJobs = function (job) {
 
-  if(isFlushPedding) return
+  if (isFlushPedding) return
   isFlushPedding = true
 
-  if(!queue.includes(job)) {
+  if (!queue.includes(job)) {
     queue.push(job)
   }
 
@@ -20,14 +20,14 @@ export const queueJobs = function(job) {
 }
 
 
-const queueFlush = function() {
+const queueFlush = function () {
   nextTick(flushJobs)
 }
 
-const flushJobs = function() {
+const flushJobs = function () {
   isFlushPedding = false
   let job
-  while(job = queue.shift()) {
+  while (job = queue.shift()) {
     job && job()
   }
 }
