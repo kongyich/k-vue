@@ -10,21 +10,21 @@ export const PbulicInstanceProxyHandels = {
   get({ _: instance }, key) {
     const { setupState, props } = instance
 
-      if(key in setupState) {
-        return setupState[key]
-      }
+    if (key in setupState) {
+      return setupState[key]
+    }
 
-      if(hasOwn(setupState, key)) {
-        return setupState[key] 
-      } else if(hasOwn(props, key)) {
-        return props[key]
-      }
+    if (hasOwn(setupState, key)) {
+      return setupState[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
+    }
 
-      if(key === 'el') {
-        return instance.vnode.el
-      }
+    if (key === 'el') {
+      return instance.vnode.el
+    }
 
-      const publicGetter = publicPropertiesMap[key]
-      if(publicGetter) return publicGetter(instance)
+    const publicGetter = publicPropertiesMap[key]
+    if (publicGetter) return publicGetter(instance)
   }
 }
