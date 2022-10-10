@@ -19,9 +19,33 @@ const parseChildren = function (context) {
     }
   }
 
+
+  if(!node) {
+    node = parseText(context)
+  }
+
   nodes.push(node)
   return nodes
 }
+
+const parseText = function(context) {
+  // 获取content
+  const content = parseTextData(context, context.source.length)
+
+  return {
+    type: NodeTypes.TEXT,
+    content
+  }
+}
+
+const parseTextData = function(context, length) {
+  const content = context.source.slice(0, length)
+  // 推进
+  advanceBy(context, length)
+
+  return content
+}
+
 
 const parseElement = function(context) {
   // 处理<div>
@@ -66,11 +90,13 @@ const parseInterpolation = function (context) {
   // rawContentLength = 9
   const rawContentLength = closeIndex - openDelimiter.length
   // rawContent = 空格message空格
-  const rawContent = context.source.slice(0, rawContentLength)
+  // const rawContent = context.source.slice(0, rawContentLength)
+  const rawContent = parseTextData(context, rawContentLength)
   // content = message
   const content = rawContent.trim()
 
-  advanceBy(context, rawContentLength + closeDelimiter.length)
+  // advanceBy(context, rawContentLength + closeDelimiter.length)
+  advanceBy(context, closeDelimiter.length)
 
   return {
     type: NodeTypes.INTERPOLATION,
