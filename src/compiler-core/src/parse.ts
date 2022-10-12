@@ -2,35 +2,66 @@ import { NodeTypes, TagType } from "./ast";
 
 export const baseParse = function (content) {
   const context = createParserContext(content)
-
-  return createRoot(parseChildren(context))
+  return createRoot(parseChildren(context, []))
 }
 
-const parseChildren = function (context) {
+const parseChildren = function (context, ancestors) {
   const nodes = []
 
-  let node;
-  let s = context.source
-  if (s.startsWith("{{")) {
-    node = parseInterpolation(context)
-  } else if(s[0] === "<") {
-    if(/[a-z]/i.test(s[1])) {
-      node = parseElement(context)
+  while(!isEnd(context, ancestors)) {
+    let node;
+    let s = context.source
+    if (s.startsWith("{{")) {
+      node = parseInterpolation(context)
+    } else if(s[0] === "<") {
+      if(/[a-z]/i.test(s[1])) {
+        node = parseElement(context, ancestors)
+      }
     }
+
+    if(!node) {
+      node = parseText(context)
+    }
+
+    nodes.push(node)
   }
 
-
-  if(!node) {
-    node = parseText(context)
-  }
-
-  nodes.push(node)
   return nodes
 }
 
+const isEnd = function(context, ancestors) {
+  const s = context.source
+
+  if(s.startsWith('</')) {
+    const startTag = ancestors[ancestors.length - 1].tag
+
+    if (startsWithEndTagOpen(s, startTag)) {
+      return true;
+    }
+  }
+
+  return !s
+}
+
+const startsWithEndTagOpen = function(source, tag) {
+  return source.startsWith('</') && source.slice(2, 2 + tag.length).toLowerCase() === tag.toLowerCase()
+}
+
 const parseText = function(context) {
+  // 寻找字符串内的< 或者 {{
+  let endIndex = context.source.length
+  const endTags = ['<', '{{']
+
+  for(let i = 0; i < endTags.length; i++) {
+    const index = context.source.indexOf(endTags[i])
+
+    if(index !== -1 && index < endIndex) {
+      endIndex = index
+    }
+  }
+
   // 获取content
-  const content = parseTextData(context, context.source.length)
+  const content = parseTextData(context, endIndex)
 
   return {
     type: NodeTypes.TEXT,
@@ -42,17 +73,23 @@ const parseTextData = function(context, length) {
   const content = context.source.slice(0, length)
   // 推进
   advanceBy(context, length)
-
   return content
 }
 
 
-const parseElement = function(context) {
+const parseElement = function(context, ancestors) {
   // 处理<div>
-  const element = parseTag(context, TagType.START)
-  // 处理</div>
-  parseTag(context, TagType.END)
+  const element: any = parseTag(context, TagType.START)
+  ancestors.push(element)
+  element.children = parseChildren(context, ancestors)
+  ancestors.pop()
 
+  if(startsWithEndTagOpen(context.source, element.tag)) {
+    // 处理</div>
+    parseTag(context, TagType.END)
+  } else {
+    throw new Error('缺少结束标签')
+  }
   return element
 }
 
@@ -71,7 +108,7 @@ const parseTag = function(context, type) {
 
   return {
     tag,
-    type: NodeTypes.ELEMENT
+    type: NodeTypes.ELEMENT,
   }
 }
 
