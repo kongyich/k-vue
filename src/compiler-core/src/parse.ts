@@ -76,7 +76,6 @@ const parseTextData = function(context, length) {
   return content
 }
 
-
 const parseElement = function(context, ancestors) {
   // 处理<div>
   const element: any = parseTag(context, TagType.START)
@@ -151,7 +150,8 @@ const advanceBy = function (context, length) {
 
 const createRoot = function (children) {
   return {
-    children
+    children,
+    type: NodeTypes.ROOT // 新增
   }
 }
 
