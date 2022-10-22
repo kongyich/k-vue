@@ -1,12 +1,12 @@
 export const extend = Object.assign
 
 
-export const isObject = (val: any)=>{
+export const isObject = (val: any) => {
   return val !== null && typeof val === 'object'
 }
 
 
-export const hasChanged = (val: any, newVal: any)=>!Object.is(val, newVal)
+export const hasChanged = (val: any, newVal: any) => !Object.is(val, newVal)
 export const hasOwn = (val: any, key: any) => Object.prototype.hasOwnProperty.call(val, key)
 const camelizeRE = /-(\w)/g;
 /**
@@ -23,3 +23,5 @@ export const toHandlerKey = (str: string) =>
 
 
 export const EMPTY_OBJ = {}
+
+export const isString = (value) => typeof value === "string"
