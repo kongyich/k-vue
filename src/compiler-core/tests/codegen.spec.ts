@@ -22,7 +22,7 @@ describe('codegen', () => {
       expect(code).toMatchSnapshot();
     });
   it('element', () => {
-    const ast = baseParse("<div>hi,{{ message }}</div>")
+    const ast = baseParse("<div>hi</div>")
     transform(ast, {
       nodeTransforms: [transformExpression, transformElement, transformText]
     })

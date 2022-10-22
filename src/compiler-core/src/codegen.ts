@@ -74,6 +74,7 @@ const genNode = function (node, context) {
 
 // 新增
 const genCompoundExpression = function (node, context) {
+
   const { push } = context
   const children = node.children
   for (let i = 0; i < children.length; i++) {
@@ -119,7 +120,6 @@ const genNullable = function (args) {
   return args.map(arg => arg || 'null')
 }
 
-
 const genInterpolation = function (node, context) {
   const { push, helper } = context
 
@@ -135,5 +135,5 @@ const genExpression = function (node, context) {
 
 const genText = function (node, context) {
   const { push } = context
-  push(`${node.content}`)
+  push(`'${node.content}'`)
 }

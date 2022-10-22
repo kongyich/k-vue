@@ -3,7 +3,9 @@ import { ShapeFlags } from "../shared/shapeFlags"
 export const Fragment = Symbol('Fragment')
 export const Text = Symbol('Text')
 
-export const createVNode = function(type, props?, children?) {
+export { createVNode as createElementVNode };
+
+export const createVNode = function (type, props?, children?) {
   const vnode = {
     type,
     props,
@@ -14,15 +16,15 @@ export const createVNode = function(type, props?, children?) {
     el: null
   }
 
-  if(typeof children === 'string') {
+  if (typeof children === 'string') {
     // vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN
     vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.TEXT_CHILDREN
-  } else if(Array.isArray(children)) {
+  } else if (Array.isArray(children)) {
     vnode.shapeFlag = vnode.shapeFlag | ShapeFlags.ARRAY_CHILDREN
   }
 
-  if(vnode.shapeFlag & ShapeFlags.STATAFUL_COMPONENT) {
-    if(typeof children === 'object') {
+  if (vnode.shapeFlag & ShapeFlags.STATAFUL_COMPONENT) {
+    if (typeof children === 'object') {
       vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN
     }
   }
@@ -33,8 +35,8 @@ export const createVNode = function(type, props?, children?) {
 
 function getShapeFlag(type) {
   return typeof type === 'string' ? ShapeFlags.ELEMENT : ShapeFlags.STATAFUL_COMPONENT
-} 
+}
 
-export const createTextVNode = function(text) {
+export const createTextVNode = function (text) {
   return createVNode(Text, {}, text)
 }

@@ -18,7 +18,7 @@ export function createComponentInstance(vnode, parent) {
     parent,
     subTree: {},
     isMounted: false,
-    emit: ()=>{}
+    emit: () => { }
   }
 
   component.emit = emit.bind(null, component) as any
@@ -40,9 +40,9 @@ function setupStatefulComponent(instance: any) {
 
   const { setup } = Component
 
-  instance.proxy = new Proxy({ _: instance },PbulicInstanceProxyHandels)
+  instance.proxy = new Proxy({ _: instance }, PbulicInstanceProxyHandels)
 
-  if(setup) {
+  if (setup) {
     setCurrentInstance(instance)
     let setupResult = setup(shallowReadonly(instance.props), {
       emit: instance.emit
@@ -55,24 +55,37 @@ function setupStatefulComponent(instance: any) {
 
 function handleSetupResult(instance, setupResult: any) {
   // function object
-  if(typeof setupResult === 'object') {
+  if (typeof setupResult === 'object') {
     instance.setupState = proxyRef(setupResult)
-  } 
+  }
 
   finishComponentSetup(instance)
-} 
+}
+
+let compiler;
+
+export function registerRuntimeCompiler(_compiler) {
+  compiler = _compiler;
+}
 
 
 function finishComponentSetup(instance: any) {
   const Component = instance.type
 
-  if(Component.render) {
+
+  if (compiler && !Component.render) {
+    if (Component.template) {
+      Component.render = compiler(Component.template);
+    }
+  }
+
+  if (Component.render) {
     instance.render = Component.render
   }
 }
 
 let currentInstance = null
-export const getCurrentInstance = function() {
+export const getCurrentInstance = function () {
   return currentInstance
 }
 
